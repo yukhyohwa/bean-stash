@@ -3,6 +3,8 @@
 ![GitHub License](https://img.shields.io/github/license/yukhyohwa/bean-stash?style=flat-square&color=A8D8B9)
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square&color=4A596D)
 
+**中文 | [English](README_EN.md)**
+
 这是一个基于 Python + SQLite 的个人书影音收藏管理工具。它不仅模仿了豆瓣的收藏体验，更通过**日系极简主义（Japanese Minimalist）**的视觉设计和本地化存储，为你打造一个私密、优雅、安全的精神角落。
 
 ## 🌟 核心特性
