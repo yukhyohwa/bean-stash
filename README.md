@@ -1,51 +1,45 @@
 # BeanStash | 豆蔵 🍃
 
-![GitHub License](https://img.shields.io/github/license/yukhyohwa/bean-stash?style=flat-square&color=A8D8B9)
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square&color=4A596D)
 
-**中文 | [English](README_EN.md)**
+A personal library manager for books, movies, and music powered by Python + SQLite. Inspired by Douban's collection experience, it offers a private, elegant, and secure space with a **Minimalist** visual design and local storage.
 
-这是一个基于 Python + SQLite 的个人书影音收藏管理工具。它不仅模仿了豆瓣的收藏体验，更通过**日系极简主义（Japanese Minimalist）**的视觉设计和本地化存储，为你打造一个私密、优雅、安全的精神角落。
+## 🌟 Key Features
 
-## 🌟 核心特性
+1.  **Elegant Interface**: Custom minimalist UI based on Streamlit, utilizing Noto Serif SC elegant fonts and refined color palettes.
+2.  **Multi-dimensional Collection**: Supports Movies, Books, and Music, with optimized layouts for each media type.
+3.  **Automatic Metadata Retrieval**: Supports auto-completion of metadata like directors, authors, summaries, and ratings via Douban search.
+4.  **Offline Cover Caching**: Automatically saves cover images locally to prevent broken links.
+5.  **Visualized Footprints**: Built-in data analysis page to review your collection trends and preferences through statistical charts.
 
-1.  **和风美学界面**：基于 Streamlit 定制的日系简约 UI，支持 Noto Serif SC 优雅字体与和色调色盘。
-2.  **多维度收藏**：支持电影、书籍、音乐三大类别，界面针对各类媒体进行了排版优化。
-3.  **自动资讯获取**：支持通过豆瓣搜索自动补全导演、作者、简介、评分等元数据。
-4.  **数据无缝迁移**：预置 Goodreads CSV 导入支持，轻松同步海外阅读记录。
-5.  **离线封面缓存**：自动本地化存储封面图，无惧链接失效。
-6.  **可视化足迹**：内置数据分析页面，通过统计图表回顾你的收藏趋势与喜好。
+## 🛠️ Tech Stack
 
-## 🛠️ 技术栈
+- **Frontend**: Streamlit (Custom CSS with Minimalist Style)
+- **Backend**: Python 3.10+
+- **Database**: SQLAlchemy + SQLite
+- **Crawler**: BeautifulSoup4 + Requests
 
-- **前端**: Streamlit (Custom CSS with Japanese Aesthetics)
-- **后端**: Python 3.10+
-- **数据库**: SQLAlchemy + SQLite
-- **爬虫**: BeautifulSoup4 + Requests
+## 🚀 Quick Start
 
-## 🚀 快速开始
-
-### 1. 安装依赖
+### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. 运行网页版本
+### 2. Run Web Version
 ```bash
 python -m streamlit run app/web/ui.py
 ```
 
-### 3. 数据导入 (Goodreads)
-将你的 Goodreads 导出文件命名为 `goodreads_library_export.csv` 放入根目录，执行：
+### 3. Run CLI Version (Optional)
 ```bash
-python import_goodreads.py
+python main.py
 ```
 
-## 📅 最近更新
-- [x] **UI 2.0**: 全面升级为日系简约风格。
-- [x] **侧边栏增强**: 集成实时数据统计。
-- [x] **无封面优化**: 文字占位封面自动生成。
-- [x] **CSV 导入**: 支持 Goodreads 全量数据同步。
+## 📅 Recent Updates
+- [x] **UI 2.0**: Fully upgraded to minimalist style.
+- [x] **Sidebar Enhancement**: Integrated real-time data statistics.
+- [x] **No Cover Optimization**: Auto-generated text placeholder covers.
 
 ---
 *Created with ❤️ by Antigravity*
