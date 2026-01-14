@@ -8,7 +8,7 @@ import os
 
 # --- 页面配置 ---
 st.set_page_config(
-    page_title="BeanStash | 个人私藏馆",
+    page_title="BeanStash | 豆蔵",
     page_icon="🍃",
     layout="wide",
     initial_sidebar_state="expanded"
