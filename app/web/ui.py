@@ -278,21 +278,97 @@ if menu == "🏛️ 我的私藏":
                 if cover_display:
                     cover_html = f'<img src="{cover_display}" class="cover-img" style="height: 100%; transition: transform 0.3s ease;">'
                 else:
-                    # 日系风格的文字封面占位
-                    cover_html = f'<div style="height: 100%; display: flex; align-items: center; justify-content: center; background-color: #f1f2f6; color: #7f8c8d; padding: 20px; text-align: center; border-bottom: 1px solid #eee;"><div style="font-family: \'Noto Serif SC\', serif; font-size: 1.1rem; line-height: 1.4;">{item.title}</div></div>'
+                    # 日系风格的文字封面占位 (Enhanced Text-Only Cover)
+                    cover_html = f'<div style="height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #f7f1e3; color: #5d513c; padding: 20px; text-align: center; border: 1px solid #dcd6c8; position: relative; box-sizing: border-box;"><div style="position: absolute; top: 10px; left: 10px; right: 10px; bottom: 10px; border: 1px solid rgba(93, 81, 60, 0.2);"></div><div style="font-family: \'Noto Serif SC\', serif; font-size: 1.2rem; font-weight: bold; line-height: 1.5; z-index: 1;">{item.title}</div><div style="margin-top: 10px; font-size: 0.8rem; color: #95a5a6; font-family: \'Zen Maru Gothic\', sans-serif;">{item.media_type.value.capitalize()}</div></div>'
 
+                # New logic: Make the card clickable via a transparent button overlay or just a button below
+                # Streamlit limitations: custom HTML clicks are hard. Let's add a small "Edit" button below each card.
+                
+                # Render the card HTML first
                 st.markdown(f"""
                 <div class="movie-card">
                     {f'<div class="rating-pill">⭐ {item.rating_douban}</div>' if item.rating_douban else ''}
                     <div style="height: 240px; background: #eee; overflow: hidden;">{cover_html}</div>
                     <div class="info-container" style="background: white; min-height: 100px; border-top: 1px solid #f0f0f0;">
-                        <div class="title-text" style="color: #333; font-weight: bold; margin-bottom: 4px;" title="{item.title}">{item.title}</div>
+                        <div class="title-text" style="color: #333; font-weight: bold; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{item.title}">{item.title}</div>
                         <div class="meta-text" style="font-size: 0.75rem;">{item.year if item.year else 'N/A'} · {item.media_type.value.upper()}</div>
                         <div style="font-size: 0.65rem; color: #999; margin-bottom: 8px; height: 15px;">{imdb_icon}</div>
                         <span class="status-badge {status_class}" style="font-size: 0.65rem;">{item.my_status.value}</span>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
+                
+                if st.button("📝 管理", key=f"edit_{item.id}", use_container_width=True):
+                    st.session_state['editing_item'] = item.id
+
+    # --- Editing Modal / Form ---
+    if 'editing_item' in st.session_state and st.session_state['editing_item']:
+        edit_id = st.session_state['editing_item']
+        item_to_edit = session.query(CollectionItem).filter(CollectionItem.id == edit_id).first()
+        
+        if item_to_edit:
+            with st.sidebar:
+                st.markdown("---")
+                st.markdown(f"### ✏️ 编辑：{item_to_edit.title}")
+                
+                # Status
+                new_status_str = st.selectbox(
+                    "状态", 
+                    ["想看/想听/想读", "在看/在听/在读", "看过/听过/读过"],
+                    index=["想", "在", "看"].index(item_to_edit.my_status.value[0]),
+                    key="edit_status"
+                )
+                
+                # Rating
+                new_rating = st.slider(
+                    "我的评分", 
+                    0.0, 5.0, 
+                    float(item_to_edit.my_rating) if item_to_edit.my_rating else 0.0, 
+                    0.5,
+                    key="edit_rating"
+                )
+                
+                # Tags
+                new_tags = st.text_input("标签 (逗号分隔)", value=item_to_edit.my_tags or "", key="edit_tags")
+                
+                # Comment - Updated key to be unique to ensure no cross-talk
+                new_comment = st.text_area(
+                    "短评 & 笔记", 
+                    value=item_to_edit.my_comment if item_to_edit.my_comment else "", 
+                    height=150, 
+                    key=f"edit_comment_{item_to_edit.id}", # UNIQUE KEY IS CRITICAL
+                    placeholder="在此记录您的观影/阅读感受..."
+                )
+                
+                c_save, c_del = st.columns(2)
+                with c_save:
+                    if st.button("💾 保存", type="primary", use_container_width=True):
+                        # Map status string back to Enum
+                        map_status_rev = {
+                            "想看/想听/想读": CollectionStatus.WISH,
+                            "在看/在听/在读": CollectionStatus.DOING,
+                            "看过/听过/读过": CollectionStatus.DONE
+                        }
+                        item_to_edit.my_status = map_status_rev[new_status_str]
+                        item_to_edit.my_rating = new_rating
+                        item_to_edit.my_tags = new_tags
+                        item_to_edit.my_comment = new_comment
+                        item_to_edit.updated_at = datetime.now()
+                        session.commit()
+                        st.success("已保存！")
+                        st.rerun()
+                
+                with c_del:
+                    if st.button("🗑️ 删除", type="secondary", use_container_width=True):
+                        session.delete(item_to_edit)
+                        session.commit()
+                        del st.session_state['editing_item']
+                        st.warning("已删除！")
+                        st.rerun()
+                        
+                if st.button("关闭", use_container_width=True):
+                    del st.session_state['editing_item']
+                    st.rerun()
 
 elif menu == "✨ 发现与录入":
     st.markdown("<h1 style='font-weight: 600;'>发现新灵感</h1>", unsafe_allow_html=True)
