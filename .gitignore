@@ -31,8 +31,9 @@ ENV/
 .idea/
 
 # Project Specific
-data/
-!data/.gitkeep
+data/collection.db
+data/covers/*
+!data/covers/.gitkeep
 *.csv
 import_goodreads.py
 
