@@ -13,28 +13,109 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- 标准化样式 (统一封面比例) ---
+# --- 核心设计系统 (CSS) ---
 st.markdown("""
 <style>
-    /* 强制图片保持书籍比例，防止过窄 */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Noto+Serif+SC:wght@700&display=swap');
+
+    /* 全局字体与背景 */
+    html, body, [data-testid="stAppViewContainer"] {
+        font-family: 'Inter', -apple-system, sans-serif;
+        background-color: #fcfcf9; /* 纸张米白色，更有书卷气 */
+    }
+    
+    h1, h2, h3 {
+        font-family: 'Noto Serif SC', serif !important;
+        color: #2c3e50;
+    }
+
+    /* 侧边栏美化 */
+    [data-testid="stSidebar"] {
+        background-color: #f8f9f8;
+        border-right: 1px solid #eee;
+    }
+    [data-testid="stSidebar"] stTitle {
+        font-family: 'Noto Serif SC', serif;
+    }
+
+    /* 封面卡片标准化比例 2:3 */
     div[data-testid="stImage"] img {
-        height: 320px !important;
+        aspect-ratio: 2 / 3 !important;
         width: 100% !important;
+        height: auto !important;
         object-fit: cover !important;
-        border-radius: 4px 12px 12px 4px; /* 模拟书脊效果 */
-        border-left: 3px solid rgba(0,0,0,0.1);
-        box-shadow: 5px 5px 15px rgba(0,0,0,0.1);
-        transition: transform 0.3s ease;
+        border-radius: 6px 14px 14px 6px; /* 更圆润的仿真书角 */
+        border-left: 2px solid rgba(0,0,0,0.1);
+        box-shadow: 4px 10px 20px rgba(0,0,0,0.08);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        max-width: 240px;
+        margin: 0 auto;
+        display: block;
     }
     div[data-testid="stImage"] img:hover {
-        transform: translateY(-5px);
+        transform: translateY(-10px) rotate(1deg);
+        box-shadow: 4px 20px 30px rgba(0,0,0,0.12);
     }
-    /* 统一文字容器高度，防止书名过长导致错位 */
+
+    /* 全局按钮标准化 (主色调: BeanStash Green) */
+    div.stButton > button {
+        border-radius: 20px !important;
+        border: 1px solid #e0e0e0 !important;
+        background-color: white !important;
+        color: #555 !important;
+        font-size: 0.85rem !important;
+        padding: 4px 16px !important;
+        transition: all 0.3s ease !important;
+    }
+    div.stButton > button:hover {
+        border-color: #6a994e !important;
+        color: #6a994e !important;
+        background-color: #f2f7ed !important;
+        box-shadow: 0 4px 12px rgba(106, 153, 78, 0.1);
+    }
+    
+    /* 针对齿轮小图标的特殊微调：去除边框和背景，防止拉伸变形 */
+    div[data-testid="stColumn"] button {
+        padding: 0px !important;
+        width: 24px !important;
+        height: 24px !important;
+        background-color: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #888 !important;
+        opacity: 0.6;
+    }
+    div[data-testid="stColumn"] button:hover {
+        background-color: transparent !important;
+        color: #6a994e !important;
+        opacity: 1;
+        transform: rotate(45deg); /* 悬停时稍微转一下，增加趣味性 */
+    }
+
+
+    /* 文字排版 */
     .stMarkdown p {
-        margin-bottom: 0.2rem;
+        margin-bottom: 0.1rem;
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+    .stCaption {
+        font-size: 0.8rem !important;
+        color: #888 !important;
+    }
+    
+    /* 数据库表格美化 */
+    [data-testid="stDataFrame"] {
+        border: 1px solid #eee;
+        border-radius: 8px;
+        overflow: hidden;
     }
 </style>
 """, unsafe_allow_html=True)
+
 
 # --- 数据库初始化 ---
 engine = init_db()
@@ -57,7 +138,8 @@ with st.sidebar:
     
     # 始终在侧边栏底部显示一个“管理”占位符
     if 'editing_item_id' in st.session_state:
-        st.subheader("⚙️ 藏品管理")
+        st.markdown("### ⚙️ 管理")
+
         item_id = st.session_state['editing_item_id']
         item_to_edit = session.query(CollectionItem).filter(CollectionItem.id == item_id).first()
         
@@ -75,7 +157,8 @@ with st.sidebar:
             
             # --- 辅助 ID 编辑 (低频) ---
             st.write("") # 增加一点空隙
-            with st.expander("🆔 标识编码 (用于匹配封面)", expanded=False):
+            with st.expander("📁 资源编码", expanded=False):
+
                 if item_to_edit.media_type == MediaType.BOOK:
                     temp_isbn = st.text_input("ISBN (书号)", value=item_to_edit.isbn or "")
                 else:
@@ -98,47 +181,63 @@ with st.sidebar:
             # --- 评论功能 (核心) ---
             new_comment = st.text_area("短评 & 个人笔记", value=item_to_edit.my_comment or "", height=200)
             
-            col_save, col_del = st.columns(2)
-            with col_save:
-                if st.button("💾 保存修改", use_container_width=True, type="primary"):
-                    map_rev = {
-                        "想看/想听/想读": CollectionStatus.WISH,
-                        "在看/在听/在读": CollectionStatus.DOING,
-                        "看过/听过/读过": CollectionStatus.DONE
-                    }
-                    # 统一在此处提交修改
+            # --- 3. 操作按钮 (极致紧凑图标行) ---
+            st.markdown("""
+            <style>
+                /* 强制侧边栏列并排且不换行 */
+                [data-testid="stSidebar"] [data-testid="column"] {
+                    flex: 1 1 0% !important;
+                    min-width: 0 !important;
+                }
+                /* 针对侧边栏内的管理按钮进行超微化处理 */
+                [data-testid="stSidebar"] .stButton > button {
+                    font-size: 0.7rem !important;
+                    padding: 2px 0px !important;
+                    white-space: nowrap !important;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    height: 28px !important;
+                    line-height: 1 !important;
+                }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            row_cols = st.columns(3)
+            with row_cols[0]:
+                if st.button("💾保存", use_container_width=True):
+                    map_rev = {"想看/想听/想读": CollectionStatus.WISH, "在看/在听/在读": CollectionStatus.DOING, "看过/听过/读过": CollectionStatus.DONE}
                     item_to_edit.isbn = temp_isbn
                     item_to_edit.imdb_id = temp_imdb
                     item_to_edit.douban_id = temp_douban
-                    
                     item_to_edit.my_status = map_rev[new_status]
                     item_to_edit.my_rating = new_rating
                     item_to_edit.my_tags = new_tags
                     item_to_edit.my_comment = new_comment
                     item_to_edit.updated_at = datetime.now()
-                    
-                    # 重新匹配封面逻辑
                     if not item_to_edit.local_cover_path or not os.path.exists(item_to_edit.local_cover_path):
                         identifier = item_to_edit.isbn or item_to_edit.imdb_id or item_to_edit.douban_id
                         if identifier:
                             potential_path = f"data/covers/{identifier}.jpg"
-                            if os.path.exists(potential_path):
-                                item_to_edit.local_cover_path = potential_path
-
+                            if os.path.exists(potential_path): item_to_edit.local_cover_path = potential_path
                     session.commit()
-                    st.success("已保存！")
+                    st.success("已保存")
                     st.rerun()
             
-            with col_del:
-                if st.button("🗑️ 删除", use_container_width=True):
+            with row_cols[1]:
+                if st.button("✖️退出", use_container_width=True):
+                    del st.session_state['editing_item_id']
+                    st.rerun()
+
+            with row_cols[2]:
+                if st.button("🗑️删除", use_container_width=True):
                     session.delete(item_to_edit)
                     session.commit()
                     del st.session_state['editing_item_id']
                     st.rerun()
-            
-            if st.button("关闭管理", use_container_width=True):
-                del st.session_state['editing_item_id']
-                st.rerun()
+
+
+
+
 
 
         else:
@@ -212,12 +311,14 @@ if menu == "🏛️ 我的私藏":
         st.caption("💡 提示：点击列头可以排序。如需修改，请切换回“封面网格”并点击“管理”。")
 
     else:
-        # 网格视图
-        cols = st.columns(4)
+        # 网格视图 - 使用 6 列布局，提高展示密度
+        cols = st.columns(6)
         DEFAULT_COVER = "config/default_cover.png"
         
         for i, item in enumerate(items):
-            with cols[i % 4]:
+            with cols[i % 6]:
+
+
                 # 封面展示逻辑
                 cover_path = None
                 
@@ -250,14 +351,15 @@ if menu == "🏛️ 我的私藏":
                 identifier_display = item.isbn or item.imdb_id or item.douban_id or "未知 ID"
                 st.caption(f"🆔 {identifier_display}")
                 
-                # 显示年份和类型
-                st.caption(f"{item.year or ''} | {item.media_type.value}")
-                
-                # 管理按钮
-                if st.button("管理", key=f"btn_{item.id}", use_container_width=True):
+                # 显示年份和类型 + 管理小图标
+                col_info, col_btn = st.columns([4, 1])
+                with col_info:
+                    st.caption(f"{item.year or ''} | {item.media_type.value}")
+                with col_btn:
+                    if st.button("⚙️", key=f"btn_{item.id}", help="管理项目"):
+                        st.session_state['editing_item_id'] = item.id
+                        st.rerun()
 
-                    st.session_state['editing_item_id'] = item.id
-                    st.rerun()
 
 elif menu == "✨ 发现与录入":
     st.header("添加新藏品")
